@@ -43,10 +43,10 @@ class Sterowanie:
             i = random.randint(0, 99)
             MLP.train(input[i], target[i])
 
-        print(MLP.feed_forward([1, 0, 1]))
-        print(MLP.feed_forward([0, 1, 1]))
-        print(MLP.feed_forward([1, 0, 0]))
-        print(MLP.feed_forward([1, 1, 1]))
+        print(MLP.feed_forward([0.5, 0, 0.5]))
+        print(MLP.feed_forward([0, 0.5, 0.5]))
+        print(MLP.feed_forward([0.5, 0, 0]))
+        print(MLP.feed_forward([0.5, 0.5, 0.5]))
 
     # def test_mlp(self):
 

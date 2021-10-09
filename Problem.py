@@ -1,6 +1,7 @@
 # generowanie danych
 import random
 import math
+import numpy as np
 
 class Dane:
 
@@ -12,11 +13,11 @@ class Dane:
         a = []
         b = []
         for i in range(iloscDanych):
-            x1 = random.randint(0, 1)
-            x2 = random.randint(0, 1)
-            x3 = random.randint(0, 1)
-            wejscia = [x1, x2, x3]
-            wynik = [round((self.funkcja_3argumentowa_1(x1, x2, x3)), 5)]
+            x1 = random.uniform(0.01, 0.5)
+            x2 = random.uniform(0.01, 0.5)
+            x3 = random.uniform(0.01, 0.5)
+            wejscia = np.array([x1, x2, x3])
+            wynik = np.array([round((self.funkcja_3argumentowa_1(x1, x2, x3)), 5)])
 
 
 
