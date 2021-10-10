@@ -30,10 +30,9 @@ class Sterowanie:
 
 
 
-
-
-K = Sterowanie()
-K.Metoda()
+if __name__ == "__main__":
+    K = Sterowanie()
+    K.Metoda()
 
 
 
