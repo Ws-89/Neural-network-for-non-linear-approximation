@@ -1,5 +1,6 @@
-from Matrix import Matrix
 import math
+import numpy as np
+import scipy.special
 
 
 class NeuralNetwork:
@@ -13,132 +14,68 @@ class NeuralNetwork:
         self.learningRate = learningRate
 
         # macierze o liczbie wierszy odpowiadajacej ilosci neuronow w warstwie (druga warstwa w nazwie) i liczbie kolumn odpowiadajcej liczbie wejsc
-        self.weightsInputHidden = Matrix(hiddenNodes, inputNodes)
-        self.weightsInputHidden.randomize()
-
-        self.weightsHiddenHidden = Matrix(hiddenNodes2, hiddenNodes)
-        self.weightsHiddenHidden.randomize()
-
-        self.weightsOutputHidden = Matrix(outputNodes, hiddenNodes2)
-        self.weightsOutputHidden.randomize()
-
-
+        self.weightsInputHidden = np.random.rand(self.hiddenNodes, self.inputNodes) - 0.5
+        self.weightsHiddenHidden = np.random.rand(self.hiddenNodes2, self.hiddenNodes) - 0.5
+        self.weightsOutputHidden = np.random.rand(self.outputNodes, self.hiddenNodes2) - 0.5
 
         # macierze o liczbie wierszy odpowiadajcej ilosci neuronow w warstwie i 1 kolumnie
-        self.biasO = Matrix(self.outputNodes, 1)
-        self.biasO.randomize()
+        self.biasO = np.random.rand(self.outputNodes, 1) - 0.5
+        self.biasH = np.random.rand(self.hiddenNodes, 1) - 0.5
+        self.biasH2 = np.random.rand(self.hiddenNodes2, 1) - 0.5
 
-        self.biasH = Matrix(self.hiddenNodes, 1)
-        self.biasH.randomize()
+        # self.activation_function = lambda x:scipy.special.expit(x)
 
-        self.biasH2 = Matrix(self.hiddenNodes2, 1)
-        self.biasH2.randomize()
+    def ReLU(self, X):
+        return np.maximum(0, X)
 
-
-
-
-    # funkcje aktywacji
-    def sigmoid(self, x):
-        return 1 / (1 + math.e ** -x)
-
-    def disigmoid(self, y):
-        return y * (1 - y)
-
-    def sigmoid2(self, x, derivative):
-        if derivative == True:
-            return x * (1 - x)
-        return 1 / (1 + math.e ** -x)
-
-    def tanh(self, x):
-        return math.tanh(x)
-
-    def ditanh(self, y):
-        return 1 - (y ** 2)
-
-    def lrelu(self, x):
-        if x >= 0:
-            return x
-        else:
-            return x*0.01
-
-    def dilrelu(self, y):
-        # czy pochodna z 0 to 1 ?
-        if y >= 0:
-            return 1
-        else:
-            return 0.01
+    def ReLU_deriv(self, Z):
+        return Z > 0
 
     def feed_a_layer(self, weights, input, bias):
-        result = Matrix.static_matrix_product(weights, input)
-        result.add_matrix(bias)
-        # result.add_number(1)
-        # result.map(self.sigmoid)
-        result.map(self.lrelu)
-        return result
-
-    def feed_an_output(self, weights, input, bias):
-        result = Matrix.static_matrix_product(weights, input)
-        result.map(self.lrelu)
-        result.add_matrix(bias)
-        # result.map(self.sigmoid)
-        return result
+        result = np.dot(weights, input) + bias
+        output = self.ReLU(result)
+        return output
 
     def calculate_gradient(self, outputs, output_errors):
         # gradients = Matrix.static_map(outputs, self.disigmoid)
-        gradients = Matrix.static_map(outputs, self.dilrelu)
-        gradients.multiply_element_wise(output_errors)
-        gradients.multiply(self.learningRate)
+        gradients = self.ReLU_deriv(outputs)
+        gradients = np.multiply(gradients, output_errors)
+        gradients = gradients * self.learningRate
         return gradients
 
-    def calculate_gradient_output(self, outputs, output_errors):
-        # gradients = Matrix.static_map(outputs, self.disigmoid)
-        gradients = Matrix.static_map(outputs, self.dilrelu)
-        gradients.multiply_element_wise(output_errors)
-        gradients.multiply(self.learningRate)
-        return gradients
-
-    @staticmethod
-    def calculate_deltas(gradients, neuronOutput):
-        neuronOutput_T = Matrix.transpose(neuronOutput)
-        weights_deltas = Matrix.static_matrix_product(gradients, neuronOutput_T)
+    def calculate_deltas(self, gradients, neuronOutput):
+        neuronOutput_T = np.array(neuronOutput).T
+        weights_deltas = np.dot(gradients, neuronOutput_T)
         return weights_deltas
 
-    @staticmethod
-    def calculate_layer_error(output_weights, next_layer_error):
-        weights_t = Matrix.transpose(output_weights)
-        weights_t.normalise()
-        layer_error = Matrix.static_matrix_product(weights_t, next_layer_error)
+    def calculate_layer_error(self, output_weights, next_layer_error):
+        weights_t = output_weights.T
+        layer_error = np.dot(weights_t, next_layer_error)
         return layer_error
 
     def feed_forward(self, input_array):
 
-        input = Matrix.fromArray(input_array)
+        input = np.array(input_array, ndmin=2).T
 
         # tworzy wektory zawierajace sumy wag po aktywacji o ilosci wierszy odpowiadajacej ilosc neuronow w warstwie i 1 kolumnie
         hidden1 = self.feed_a_layer(self.weightsInputHidden, input, self.biasH)
         hidden2 = self.feed_a_layer(self.weightsHiddenHidden, hidden1, self.biasH2)
         output = self.feed_a_layer(self.weightsOutputHidden, hidden2, self.biasO)
 
-        return output.toArray()
+        return output
 
     def train(self, input_array, targets_array):
-
         # feed forward
-        input = Matrix.fromArray(input_array)
-
+        input = np.array(input_array, ndmin=2).T
 
         hidden1 = self.feed_a_layer(self.weightsInputHidden, input, self.biasH)
         hidden2 = self.feed_a_layer(self.weightsHiddenHidden, hidden1, self.biasH2)
         outputs = self.feed_a_layer(self.weightsOutputHidden, hidden2, self.biasO)
 
-        targets = Matrix.fromArray(targets_array)
-
         # ERROR = TARGET - OUTPUT
         # blad to moze byc takze blad sredniokwadratowy (output - target)^2
         # bledy warstwy wyjsciowej (ilosc neuronow na wyjsciu X 1 kolumna)
-        output_errors = Matrix.substract(targets, outputs)
-        print("output errors")
-        output_errors.draw()
+        output_errors = targets_array - outputs
 
         # mnozenie wartosci wyjsciowych przez: wartosci bledow, pochodna aktywacji oraz wspolczynnik uczenia ( neurony w warstwie X 1 kolumna)
         gradients = self.calculate_gradient(outputs, output_errors)
@@ -148,9 +85,9 @@ class NeuralNetwork:
         weights_h2o_deltas = self.calculate_deltas(gradients, hidden2)
 
         # zmiana wag
-        self.weightsOutputHidden.add_matrix(weights_h2o_deltas)
+        self.weightsOutputHidden = self.weightsOutputHidden + weights_h2o_deltas
         # zmiana biasu
-        self.biasO.add_matrix(gradients)
+        self.biasO = self.biasO + gradients
 
 
         # Calculate the hidden 2 layer errors
@@ -164,10 +101,10 @@ class NeuralNetwork:
         weights_hh2_deltas = self.calculate_deltas(hidden2_gradient, hidden1)
 
         # adjust the weights by deltas
-        self.weightsHiddenHidden.add_matrix(weights_hh2_deltas)
+        self.weightsHiddenHidden = self.weightsHiddenHidden + weights_hh2_deltas
 
         # adjust the bias by its deltas (which is just the gradient)
-        self.biasH2.add_matrix(hidden2_gradient)
+        self.biasH2 = self.biasH2 + hidden2_gradient
 
         # # Calculate the hidden layer errors
         hidden_errors = self.calculate_layer_error(self.weightsHiddenHidden, hidden2_errors)
@@ -180,9 +117,9 @@ class NeuralNetwork:
 
 
         # adjust the weights by deltas
-        self.weightsInputHidden.add_matrix(weights_ih_deltas)
+        self.weightsInputHidden = self.weightsInputHidden + weights_ih_deltas
         # adjust the bias by its deltas (which is just the gradient)
-        self.biasH.add_matrix(hidden_gradient)
+        self.biasH = self.biasH + hidden_gradient
 
 
 
