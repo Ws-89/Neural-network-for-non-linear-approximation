@@ -1,6 +1,5 @@
 from Metoda import NeuralNetwork
 import random
-import math
 from Problem import Dane
 
 
@@ -25,9 +24,6 @@ class Sterowanie:
         print(MLP.feed_forward([0, 0.5, 0.5]))
         print(MLP.feed_forward([0.5, 0, 0]))
         print(MLP.feed_forward([0.5, 0.5, 0.5]))
-
-    # def test_mlp(self):
-
 
 
 if __name__ == "__main__":
